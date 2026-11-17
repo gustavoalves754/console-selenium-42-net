@@ -13,7 +13,7 @@ internal sealed class DuckDuckGoPage
         "[role='listbox'] [role='option'], .search-suggestions-list li, .sbox-suggestions li");
 
     private static readonly By OrganicResultLinks = By.CssSelector(
-        "article[data-testid='result'] h2 a, [data-testid='result-title-a'], .result__a");
+        "article[data-testid='result'] h2 a, [data-testid='result-title-a'], .result__a, .result-link");
 
     private readonly IWebDriver _driver;
     private readonly WebDriverWait _wait;
@@ -71,7 +71,9 @@ internal sealed class DuckDuckGoPage
     {
         string resultsUrl = _driver.Url;
         IWebElement firstResult = _wait.Until(driver => driver.FindElements(OrganicResultLinks)
-            .FirstOrDefault(link => link.Displayed && !string.IsNullOrWhiteSpace(link.GetAttribute("href"))))!;
+            .FirstOrDefault(link =>
+                link.Displayed &&
+                !string.IsNullOrWhiteSpace(link.GetAttribute("href"))))!;
 
         firstResult.Click();
         _wait.Until(driver =>
@@ -79,6 +81,14 @@ internal sealed class DuckDuckGoPage
             !driver.Url.Contains("duckduckgo.com/?q=", StringComparison.OrdinalIgnoreCase));
 
         return resultsUrl;
+    }
+
+    public bool IsBotChallengeDisplayed()
+    {
+        string pageText = _driver.FindElement(By.TagName("body")).Text;
+        return pageText.Contains("bots use DuckDuckGo", StringComparison.OrdinalIgnoreCase) ||
+               pageText.Contains("confirm this search was made by a human", StringComparison.OrdinalIgnoreCase) ||
+               _driver.PageSource.Contains("DDG.deep.anomalyDetectionBlock(", StringComparison.OrdinalIgnoreCase);
     }
 
     public void GoBackToResults(string expectedResultsUrl)
